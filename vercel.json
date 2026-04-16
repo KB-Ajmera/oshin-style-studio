@@ -1,23 +1,13 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": { "maxLambdaSize": "50mb", "runtime": "python3.12" }
-    },
-    {
-      "src": "widget/**",
-      "use": "@vercel/static"
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index" },
+    { "source": "/", "destination": "/widget/index.html" },
+    { "source": "/widget/:path*", "destination": "/widget/:path*" }
+  ],
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60
     }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/index.py" },
-    { "src": "/widget/(.*)", "dest": "/widget/$1" },
-    { "src": "/", "dest": "/widget/index.html" },
-    { "src": "/(.*)", "dest": "/widget/$1" }
-  ],
-  "env": {
-    "PYTHONPATH": "backend"
   }
 }
