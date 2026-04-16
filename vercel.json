@@ -1,13 +1,11 @@
 {
   "version": 2,
+  "buildCommand": null,
+  "outputDirectory": null,
+  "installCommand": "pip install -r requirements.txt",
+  "framework": null,
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/index" },
-    { "source": "/", "destination": "/widget/index.html" },
-    { "source": "/widget/:path*", "destination": "/widget/:path*" }
-  ],
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 60
-    }
-  }
+    { "source": "/api/:path*", "destination": "/api/index.py" },
+    { "source": "/", "destination": "/widget/index.html" }
+  ]
 }
