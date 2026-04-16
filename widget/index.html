@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oshin — Style Studio</title>
+    <link rel="stylesheet" href="/widget/styles.css">
+    <style>
+        * { margin: 0; box-sizing: border-box; }
+        body {
+            background: #ffffff;
+            min-height: 100vh;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #000;
+        }
+
+        .page-header {
+            padding: 28px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e5e0;
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .page-header .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 38px;
+            font-weight: 400;
+            color: #000;
+            letter-spacing: -0.01em;
+            font-style: italic;
+        }
+        .page-header nav {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+        .page-header nav a {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #000;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+        .page-header nav a:hover { opacity: 0.6; }
+
+        .hero {
+            text-align: center;
+            padding: 80px 20px 56px;
+            border-bottom: 1px solid #e5e5e0;
+        }
+        .hero h1 {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: clamp(48px, 7vw, 84px);
+            font-weight: 400;
+            color: #000;
+            letter-spacing: -0.02em;
+            line-height: 1.02;
+            margin-bottom: 16px;
+            font-style: italic;
+        }
+        .hero .tagline {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            color: #000;
+            font-weight: 500;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+        }
+
+        .widget-container {
+            max-width: 1200px;
+            margin: 0 auto 80px;
+            padding: 0;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid #e5e5e0;
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            color: #000;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="logo">Oshin</div>
+        <nav>
+            <a href="https://oshinsarin.in" target="_blank">Shop</a>
+            <a href="https://oshinsarin.in/collections/all" target="_blank">Collections</a>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>Find your perfect look</h1>
+        <p class="tagline">Style Quiz &mdash; Curated Picks &mdash; Virtual Try-On</p>
+    </section>
+
+    <div class="widget-container">
+        <div id="vto-widget"></div>
+    </div>
+
+    <footer class="footer">
+        Oshin Sarin &mdash; Style Studio
+    </footer>
+
+    <script src="/widget/app.js" data-vto-widget data-api-base="" data-mode="quality"></script>
+</body>
+</html>

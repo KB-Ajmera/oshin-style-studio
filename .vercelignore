@@ -1,0 +1,17 @@
+# Large files not needed in deployment (images live in Cloudinary now)
+data/linesheet_images/
+data/linesheet_images_clean/
+data/shopify_all_images/
+data/shopify_all_clean/
+data/shopify_images/
+data/shopify_images_clean/
+data/product_images_final/
+data/product_images_clean/
+data/history/
+data/*.xlsx
+backend/__pycache__/
+backend/models/
+__pycache__/
+*.pyc
+.env
+*.log

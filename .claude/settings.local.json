@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"from main import app; print\\('App loads OK'\\)\")",
+      "Bash(uvicorn main:app --host 0.0.0.0 --port 8000)",
+      "Bash(curl -s http://localhost:8000/api/questionnaire)",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s http://localhost:8000/api/categories)",
+      "Bash(curl -s -X POST http://localhost:8000/api/preferences -H \"Content-Type: application/json\" -d '{\"session_id\":\"test2\",\"preferences\":{\"body_type\":\"hourglass\",\"size\":\"m\",\"occasion\":[\"party\",\"date\"],\"season\":\"summer\",\"colors\":[\"red\",\"black\"],\"style\":[\"glamorous\",\"romantic\"]}}')",
+      "Bash(curl -s \"http://localhost:8000/api/recommendations?session_id=test2&limit=5\")",
+      "Bash(curl -s \"http://localhost:8000/api/beauty/recommendations?session_id=test2\")",
+      "Bash(curl -s http://localhost:8000/api/history/test2)",
+      "Bash(curl -s -X POST http://localhost:8000/api/preferences -H \"Content-Type: application/json\" -d '{\"session_id\":\"test3\",\"preferences\":{\"body_type\":\"pear\",\"size\":\"m\",\"occasion\":[\"casual\",\"date\"],\"season\":\"summer\",\"colors\":[\"blue\",\"white\",\"pink\"],\"style\":[\"romantic\",\"minimalist\"]}}')",
+      "Bash(curl -s \"http://localhost:8000/api/recommendations?session_id=test3&limit=5\")",
+      "Bash(curl -s http://localhost:8000/api/hairstyles)",
+      "Bash(curl -s http://localhost:8000/api/makeup)",
+      "Bash(curl -s -X POST http://localhost:8000/api/preferences -H 'Content-Type: application/json' -d '{\"session_id\":\"health-check\",\"preferences\":{\"body_type\":\"hourglass\",\"size\":\"m\",\"occasion\":[\"party\"],\"season\":\"summer\",\"colors\":[\"black\"],\"style\":[\"glamorous\"]}}')",
+      "Bash(python live_tryon.py)",
+      "Read(//home/sakshi/Downloads/FAshion AI /data/product_images/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/api/categories)",
+      "Bash(python3)"
+    ],
+    "additionalDirectories": [
+      "/home/sakshi/Downloads/FAshion AI "
+    ]
+  }
+}

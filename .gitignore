@@ -1,0 +1,51 @@
+# Environment & secrets
+.env
+.env.local
+.env.vercel
+*.pem
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# Large data files (hosted on Cloudinary instead)
+data/linesheet_images/
+data/linesheet_images_clean/
+data/shopify_all_images/
+data/shopify_all_clean/
+data/shopify_images/
+data/shopify_images_clean/
+data/product_images/
+data/product_images_final/
+data/product_images_clean/
+data/linesheet_verify/
+data/history/
+data/*.xlsx
+data/Clothes_Dataset/
+data/women\ fashion/
+*.dwg
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Backup files
+*.bak
+*~
+
+# Vercel
+.vercel
