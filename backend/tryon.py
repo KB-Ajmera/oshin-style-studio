@@ -127,12 +127,12 @@ async def start_tryon(
             "model_image": model_image_b64,
             "product_image": garment_image_url,
         },
-        "resolution": "2k",
+        "resolution": "4k",
         "generation_mode": "quality",
         "num_images": 1,
         "output_format": "png",
     }
-    print(f"[TryOn] tryon-max 2K | category={category}")
+    print(f"[TryOn] tryon-max 4K | category={category}")
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         resp = await client.post(FASHN_API_URL, json=payload, headers=headers)
