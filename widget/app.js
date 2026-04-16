@@ -419,8 +419,12 @@
     },
 
     _showGuidelinesModal(onContinue) {
-      // First show privacy modal, then guidelines
-      this._showPrivacyModal(() => this._showGuidelinesOnly(onContinue));
+      // Show privacy only on first time, skip after
+      if (!localStorage.getItem("vto_seen_privacy")) {
+        this._showPrivacyModal(() => this._showGuidelinesOnly(onContinue));
+      } else {
+        this._showGuidelinesOnly(onContinue);
+      }
     },
 
     _showGuidelinesOnly(onContinue) {
