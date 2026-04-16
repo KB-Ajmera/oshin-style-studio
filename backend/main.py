@@ -9,6 +9,8 @@ from fastapi import FastAPI, UploadFile, File, Form, Query, HTTPException, Reque
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel
 
 import config
@@ -20,7 +22,10 @@ from history import (
     get_or_create_session, save_preferences, add_tryon_to_history,
     get_history, add_comparison, get_comparisons, delete_history_entry,
 )
-from security import check_rate_limit, validate_upload, validate_session_id
+from security import (
+    check_rate_limit, validate_upload, validate_session_id, sanitize_string,
+    SecurityHeadersMiddleware,
+)
 
 
 @asynccontextmanager
@@ -44,12 +49,27 @@ ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",") if os.getenv("ALLO
 ]
 ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS if o.strip()]
 
+# Security middleware stack (order matters — last added runs first)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=[
+        "localhost", "127.0.0.1", "0.0.0.0",
+        "*.vercel.app",
+        "oshinsarin.in", "*.oshinsarin.in",
+        "*",  # Keep wildcard for now; tighten after domain is set
+    ],
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE"],
-    allow_headers=["Content-Type", "X-Session-Id"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "X-Session-Id", "Authorization"],
+    expose_headers=["X-Session-Id"],
     max_age=3600,
 )
 
@@ -63,6 +83,33 @@ async def root():
     return RedirectResponse(url="/widget/")
 
 
+@app.get("/api/health")
+async def health_check():
+    """Public health check — doesn't expose internals."""
+    return {"status": "ok"}
+
+
+# ─── Global error handler — hide internal errors in production ────
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+IS_DEV = os.getenv("HOST", "").startswith("0.0.0.0") and not os.getenv("VERCEL")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Log server-side, return generic message to client
+    print(f"[ERROR] {type(exc).__name__}: {exc}")
+    if IS_DEV:
+        return JSONResponse(status_code=500, content={"detail": str(exc)})
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(status_code=422, content={"detail": "Invalid request data"})
+
+
 # ─── Session helper ────────────────────────────────────────────────
 
 def _session_id(request: Request) -> str:
@@ -72,7 +119,8 @@ def _session_id(request: Request) -> str:
 # ─── Questionnaire endpoints ──────────────────────────────────────
 
 @app.get("/api/questionnaire")
-async def get_questionnaire():
+async def get_questionnaire(request: Request):
+    check_rate_limit(request, "read")
     return QUESTIONNAIRE
 
 
@@ -82,7 +130,8 @@ class PreferencesBody(BaseModel):
 
 
 @app.post("/api/preferences")
-async def save_user_preferences(body: PreferencesBody):
+async def save_user_preferences(body: PreferencesBody, request: Request):
+    check_rate_limit(request, "write")
     sid = validate_session_id(body.session_id)
     session = save_preferences(sid, body.preferences)
     return {"status": "saved", "session_id": session["session_id"]}
@@ -90,9 +139,11 @@ async def save_user_preferences(body: PreferencesBody):
 
 @app.get("/api/recommendations")
 async def get_outfit_recommendations(
+    request: Request,
     session_id: str = Query(...),
     limit: int = Query(30, ge=1, le=100),
 ):
+    check_rate_limit(request, "read")
     session_id = validate_session_id(session_id)
     session = get_or_create_session(session_id)
     prefs = session.get("preferences", {})
@@ -106,21 +157,28 @@ async def get_outfit_recommendations(
 # ─── Catalog endpoints ────────────────────────────────────────────
 
 @app.get("/api/categories")
-async def list_categories():
+async def list_categories(request: Request):
+    check_rate_limit(request, "read")
     return {"categories": get_categories()}
 
 
 @app.get("/api/outfits")
 async def list_outfits(
+    request: Request,
     category: str | None = Query(None),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
 ):
+    check_rate_limit(request, "read")
+    if category:
+        category = sanitize_string(category, max_len=50, field_name="category")
     return get_all_outfits(category=category, page=page, per_page=per_page)
 
 
 @app.get("/api/outfits/{outfit_id}")
-async def get_outfit(outfit_id: str):
+async def get_outfit(request: Request, outfit_id: str):
+    check_rate_limit(request, "read")
+    outfit_id = sanitize_string(outfit_id, max_len=100, field_name="outfit_id")
     outfit = get_outfit_by_id(outfit_id)
     if not outfit:
         raise HTTPException(status_code=404, detail="Outfit not found")
@@ -145,13 +203,12 @@ async def virtual_tryon(
     makeup: str = Form(""),
 ):
     """Start a virtual try-on."""
-    # Rate limit by IP
-    client_ip = request.client.host if request.client else "unknown"
-    check_rate_limit(client_ip, "tryon")
+    check_rate_limit(request, "tryon")
 
     if not config.FASHN_API_KEY:
-        raise HTTPException(status_code=500, detail="FASHN_API_KEY not configured")
+        raise HTTPException(status_code=500, detail="Service temporarily unavailable")
 
+    outfit_id = sanitize_string(outfit_id, max_len=100, field_name="outfit_id")
     outfit = get_outfit_by_id(outfit_id)
     if not outfit:
         raise HTTPException(status_code=404, detail="Outfit not found")
@@ -187,7 +244,9 @@ async def virtual_tryon(
 
 
 @app.get("/api/tryon/status/{prediction_id}")
-async def tryon_status(prediction_id: str):
+async def tryon_status(request: Request, prediction_id: str):
+    check_rate_limit(request, "read")
+    prediction_id = sanitize_string(prediction_id, max_len=100, field_name="prediction_id")
     if not config.FASHN_API_KEY:
         raise HTTPException(status_code=500, detail="FASHN_API_KEY not configured")
     result = await check_status(prediction_id)
@@ -207,11 +266,10 @@ async def virtual_tryon_sync(
     makeup: str = Form(""),
 ):
     """Synchronous try-on — waits for result."""
-    client_ip = request.client.host if request.client else "unknown"
-    check_rate_limit(client_ip, "tryon")
+    check_rate_limit(request, "tryon")
 
     if not config.FASHN_API_KEY:
-        raise HTTPException(status_code=500, detail="FASHN_API_KEY not configured")
+        raise HTTPException(status_code=500, detail="Service temporarily unavailable")
 
     outfit = get_outfit_by_id(outfit_id)
     if not outfit:
@@ -276,20 +334,23 @@ async def beauty_recommendations(session_id: str = Query(...)):
 # ─── History endpoints ─────────────────────────────────────────────
 
 @app.get("/api/session/{session_id}")
-async def get_session(session_id: str):
+async def get_session(request: Request, session_id: str):
+    check_rate_limit(request, "read")
     session_id = validate_session_id(session_id)
     session = get_or_create_session(session_id)
     return session
 
 
 @app.post("/api/session")
-async def create_session():
+async def create_session(request: Request):
+    check_rate_limit(request, "write")
     session = get_or_create_session()
     return {"session_id": session["session_id"]}
 
 
 @app.get("/api/history/{session_id}")
-async def get_tryon_history(session_id: str):
+async def get_tryon_history(request: Request, session_id: str):
+    check_rate_limit(request, "read")
     session_id = validate_session_id(session_id)
     return {"history": get_history(session_id)}
 
@@ -305,8 +366,11 @@ class SaveHistoryBody(BaseModel):
 
 
 @app.post("/api/history")
-async def save_to_history(body: SaveHistoryBody):
+async def save_to_history(body: SaveHistoryBody, request: Request):
+    check_rate_limit(request, "write")
     validate_session_id(body.session_id)
+    # Sanitize strings in body
+    body.outfit_name = sanitize_string(body.outfit_name, max_len=200, field_name="outfit_name")
     entry = add_tryon_to_history(
         session_id=body.session_id,
         outfit_id=body.outfit_id,
@@ -320,8 +384,10 @@ async def save_to_history(body: SaveHistoryBody):
 
 
 @app.delete("/api/history/{session_id}/{entry_id}")
-async def delete_from_history(session_id: str, entry_id: str):
+async def delete_from_history(request: Request, session_id: str, entry_id: str):
+    check_rate_limit(request, "write")
     session_id = validate_session_id(session_id)
+    entry_id = sanitize_string(entry_id, max_len=100, field_name="entry_id")
     ok = delete_history_entry(session_id, entry_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Entry not found")
@@ -337,7 +403,8 @@ class CompareBody(BaseModel):
 
 
 @app.post("/api/comparisons")
-async def create_comparison(body: CompareBody):
+async def create_comparison(body: CompareBody, request: Request):
+    check_rate_limit(request, "write")
     validate_session_id(body.session_id)
     if len(body.tryon_ids) < 2:
         raise HTTPException(status_code=400, detail="Need at least 2 try-ons to compare")
@@ -346,7 +413,8 @@ async def create_comparison(body: CompareBody):
 
 
 @app.get("/api/comparisons/{session_id}")
-async def list_comparisons(session_id: str):
+async def list_comparisons(request: Request, session_id: str):
+    check_rate_limit(request, "read")
     session_id = validate_session_id(session_id)
     return {"comparisons": get_comparisons(session_id)}
 
