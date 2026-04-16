@@ -419,7 +419,15 @@
     },
 
     _showGuidelinesModal(onContinue) {
-      // Show privacy only on first time, skip after
+      // Show privacy + guidelines only on first upload per session
+      // After that, go straight to the action (file picker / camera)
+      if (this._seenGuidelinesThisSession) {
+        onContinue && onContinue();
+        return;
+      }
+
+      this._seenGuidelinesThisSession = true;
+
       if (!localStorage.getItem("vto_seen_privacy")) {
         this._showPrivacyModal(() => this._showGuidelinesOnly(onContinue));
       } else {
