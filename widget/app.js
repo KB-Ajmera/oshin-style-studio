@@ -703,12 +703,6 @@
 
       card.append(img, name);
 
-      if (showScore && outfit.match_pct > 0) {
-        const badge = el("div", "vto-match-badge");
-        badge.textContent = `${outfit.match_pct}% match`;
-        card.appendChild(badge);
-      }
-
       card.onclick = () => {
         const idx = this.selectedOutfits.findIndex(o => o.id === outfit.id);
         if (idx >= 0) {
