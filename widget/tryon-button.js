@@ -315,14 +315,14 @@
             <path d="M12 2L13.5 8.5L20 7L15 12L20 17L13.5 15.5L12 22L10.5 15.5L4 17L9 12L4 7L10.5 8.5L12 2Z"/>
           </svg>
         </span>
-        Try On Yourself
+        Virtual Try-On This Outfit
         <span class="otn-btn-badge">AI</span>
       `;
       btn.onclick = () => this.openModal();
 
       const hint = document.createElement("p");
       hint.className = "otn-btn-hint";
-      hint.textContent = "See how this looks on you in seconds";
+      hint.textContent = "See how this outfit looks on you in seconds";
 
       wrap.append(btn, hint);
       container.appendChild(wrap);

@@ -49,3 +49,6 @@ npm-debug.log*
 
 # Vercel
 .vercel
+
+# Local widget test mocks (never deploy)
+widget/_mock-*.html
