@@ -780,6 +780,27 @@
 
         options.append(camOpt, uploadOpt);
         section.appendChild(options);
+
+        // "For the best result" guidance — body outline + photo rules
+        const rule = (text, ok) =>
+          `<li style="font-size:13px;color:#5a544c;line-height:1.45;padding-left:18px;position:relative;margin-bottom:9px;font-family:'Inter',sans-serif">
+            <span style="position:absolute;left:0;top:5px;width:7px;height:7px;border-radius:50%;background:${ok ? '#4a7c59' : '#c0392b'}"></span>${text}
+          </li>`;
+        const guide = el("div", "");
+        guide.style.cssText = "margin:22px auto 0;max-width:520px;border:1px solid #e0d8cc;border-radius:12px;padding:20px;display:flex;gap:22px;align-items:center;background:#fff";
+        guide.innerHTML = `
+          <img src="${this.apiBase}/widget/body-outline.png" alt="Full body reference" style="width:84px;height:auto;flex-shrink:0">
+          <div>
+            <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#9b6a4a;font-weight:600;margin-bottom:12px;font-family:'Inter',sans-serif">For the best result</div>
+            <ul style="margin:0;padding:0;list-style:none">
+              ${rule("Full body visible, head to toe", true)}
+              ${rule("Stand straight, facing the camera", true)}
+              ${rule("Good lighting, plain background", true)}
+              ${rule("Avoid cropped or blurry photos", false)}
+            </ul>
+          </div>
+        `;
+        section.appendChild(guide);
       }
 
       this.bodyEl.appendChild(section);

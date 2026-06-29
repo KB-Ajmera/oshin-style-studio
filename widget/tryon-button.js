@@ -177,9 +177,9 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     }
     .otn-retake {
-      margin-top: 10px; font-size: 12px; color: #9b6a4a;
+      display: block; margin: 12px auto 16px; font-size: 12px; color: #9b6a4a;
       background: none; border: none; cursor: pointer;
-      text-decoration: underline; font-weight: 400;
+      text-decoration: underline; font-weight: 400; text-align: center;
     }
 
     /* ─── Loading ─── */
@@ -208,6 +208,11 @@
       box-shadow: 0 8px 32px rgba(0,0,0,0.1);
       margin-bottom: 20px;
     }
+    .otn-disclaimer {
+      text-align: center; font-size: 12.5px; color: #8a4a26;
+      background: rgba(155,106,74,0.12); border-radius: 8px;
+      padding: 10px 12px; margin-bottom: 14px; font-weight: 600;
+    }
     .otn-result-actions { display: flex; gap: 10px; }
     .otn-atc {
       flex: 1; padding: 14px; background: #1a1714; color: white;
@@ -224,10 +229,35 @@
     .otn-download:hover { border-color: #1a1714; }
     .otn-download svg { width: 16px; height: 16px; color: #1a1714; }
 
+    .otn-lead {
+      margin-top: 16px; padding: 14px 16px; background: #f3efe9;
+      border: 1px solid #e0d8cc; border-radius: 10px;
+    }
+    .otn-lead-label {
+      font-family: 'Inter', sans-serif; font-size: 12px; color: #1a1714;
+      font-weight: 500; text-align: center; margin-bottom: 10px;
+    }
+    .otn-lead-row { display: flex; gap: 8px; }
+    .otn-lead-input {
+      flex: 1; padding: 11px 14px; border: 1.5px solid #d0c8ba; border-radius: 100px;
+      font-family: 'Inter', sans-serif; font-size: 13px; color: #1a1714;
+      outline: none; background: #fff; transition: border-color .2s;
+    }
+    .otn-lead-input:focus { border-color: #1a1714; }
+    .otn-lead-btn {
+      padding: 11px 22px; background: #1a1714; color: #fff; border: none;
+      border-radius: 100px; font-family: 'Inter', sans-serif; font-size: 12px;
+      font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+    }
+    .otn-lead-btn:disabled { opacity: 0.6; cursor: default; }
+    .otn-lead-done {
+      font-family: 'Inter', sans-serif; font-size: 13px; color: #4a7c59;
+      text-align: center; font-weight: 500;
+    }
     .otn-tryagain {
-      margin-top: 12px; font-size: 12px; color: #9b6a4a;
+      display: block; margin: 12px auto 0; font-size: 12px; color: #9b6a4a;
       background: none; border: none; cursor: pointer;
-      text-decoration: underline; font-weight: 400;
+      text-decoration: underline; font-weight: 400; text-align: center;
     }
 
     /* ─── Error ─── */
@@ -237,6 +267,39 @@
     }
 
     .otn-file-input { display: none; }
+
+    /* ─── Two-column upload layout ─── */
+    .otn-modal.otn-wide { max-width: 720px; }
+    .otn-cols {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch;
+    }
+    .otn-col-left { display: flex; flex-direction: column; }
+    .otn-col-left .otn-upload { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .otn-col-right {
+      background: white; border: 1px solid #e0d8cc; border-radius: 10px;
+      padding: 18px 16px; display: flex; flex-direction: column; align-items: center;
+    }
+    .otn-col-right h4 {
+      margin: 0 0 10px; font-family: 'Inter', sans-serif; font-size: 10px;
+      letter-spacing: 0.12em; text-transform: uppercase; color: #9b6a4a; font-weight: 600;
+    }
+    .otn-figure { width: 96px; height: auto; display: block; margin: 0 auto 14px; }
+    .otn-rules { margin: 0; padding: 0; list-style: none; width: 100%; }
+    .otn-rules li {
+      font-family: 'Inter', sans-serif; font-size: 12px; color: #5a544c;
+      line-height: 1.35; padding-left: 17px; position: relative; margin-bottom: 9px;
+    }
+    .otn-rules li:last-child { margin-bottom: 0; }
+    .otn-rules li::before {
+      content: ''; position: absolute; left: 0; top: 5px;
+      width: 7px; height: 7px; border-radius: 50%;
+    }
+    .otn-rules li.do::before { background: #4a7c59; }
+    .otn-rules li.dont::before { background: #c0392b; }
+    @media (max-width: 600px) {
+      .otn-cols { grid-template-columns: 1fr; }
+      .otn-figure { width: 64px; }
+    }
   `;
 
   // ─── Widget Logic ──────────────────────────────────────
@@ -340,6 +403,7 @@
 
       const modal = document.createElement("div");
       modal.className = "otn-modal";
+      this.modalEl = modal;
 
       const close = document.createElement("button");
       close.className = "otn-close";
@@ -365,8 +429,9 @@
 
     showUploadStep() {
       this.modalContent.innerHTML = "";
+      if (this.modalEl) this.modalEl.classList.add("otn-wide");
 
-      // Product header
+      // Product header (full width)
       const product = document.createElement("div");
       product.className = "otn-product";
       product.innerHTML = `
@@ -380,6 +445,14 @@
       const body = document.createElement("div");
       body.className = "otn-body";
 
+      // Two-column layout
+      const cols = document.createElement("div");
+      cols.className = "otn-cols";
+
+      // ── LEFT: title + subtitle + upload dropzone ──
+      const left = document.createElement("div");
+      left.className = "otn-col-left";
+
       const title = document.createElement("div");
       title.className = "otn-title";
       title.innerHTML = `See it <em>on you</em>`;
@@ -388,7 +461,6 @@
       subtitle.className = "otn-subtitle";
       subtitle.textContent = "Upload a full body photo and we'll dress you in this piece";
 
-      // Upload area
       const upload = document.createElement("div");
       upload.className = "otn-upload";
       upload.innerHTML = `
@@ -414,19 +486,24 @@
         if (e.dataTransfer.files[0]) this.handleFile(e.dataTransfer.files[0]);
       };
 
-      // Guidelines
-      const guidelines = document.createElement("div");
-      guidelines.className = "otn-guidelines";
-      guidelines.innerHTML = `
-        <ul>
-          <li class="do">Stand straight, full body visible</li>
-          <li class="do">Face camera directly</li>
-          <li class="do">Good lighting, clear photo</li>
+      left.append(upload, fileInput);
+
+      // ── RIGHT: body outline + the 4 rules ──
+      const right = document.createElement("div");
+      right.className = "otn-col-right";
+      right.innerHTML = `
+        <h4>For the best result</h4>
+        <img class="otn-figure" src="${this.apiBase}/widget/body-outline.png" alt="Full body reference">
+        <ul class="otn-rules">
+          <li class="do">Full body visible, head to toe</li>
+          <li class="do">Stand straight, facing the camera</li>
+          <li class="do">Good lighting, plain background</li>
           <li class="dont">Avoid cropped or blurry photos</li>
         </ul>
       `;
 
-      body.append(title, subtitle, upload, fileInput, guidelines);
+      cols.append(left, right);
+      body.append(title, subtitle, cols);
       this.modalContent.append(product, body);
     },
 
@@ -441,6 +518,7 @@
 
     showPreviewStep() {
       this.modalContent.innerHTML = "";
+      if (this.modalEl) this.modalEl.classList.remove("otn-wide");
 
       const product = document.createElement("div");
       product.className = "otn-product";
@@ -467,13 +545,17 @@
       retake.onclick = () => this.showUploadStep();
       preview.appendChild(retake);
 
+      const disclaimer = document.createElement("div");
+      disclaimer.className = "otn-disclaimer";
+      disclaimer.textContent = "For best output, upload a full body image";
+
       const tryBtn = document.createElement("button");
       tryBtn.className = "otn-atc";
-      tryBtn.style.cssText = "width:100%;margin-top:16px";
+      tryBtn.style.cssText = "width:100%";
       tryBtn.textContent = "TRY IT ON";
       tryBtn.onclick = () => this.startTryOn();
 
-      body.append(preview, tryBtn);
+      body.append(preview, disclaimer, tryBtn);
       this.modalContent.append(product, body);
     },
 
@@ -482,6 +564,7 @@
     async startTryOn() {
       // Show loading
       this.modalContent.innerHTML = "";
+      if (this.modalEl) this.modalEl.classList.remove("otn-wide");
       const body = document.createElement("div");
       body.className = "otn-body";
       body.innerHTML = `
@@ -544,6 +627,7 @@
 
     showResult(imageUrl) {
       this.modalContent.innerHTML = "";
+      if (this.modalEl) this.modalEl.classList.remove("otn-wide");
 
       const body = document.createElement("div");
       body.className = "otn-body";
@@ -557,6 +641,11 @@
       const img = document.createElement("img");
       img.src = imageUrl;
       result.appendChild(img);
+
+      // Disclaimer
+      const disclaimer = document.createElement("div");
+      disclaimer.className = "otn-disclaimer";
+      disclaimer.textContent = "For best output, upload a full body image";
 
       // Actions
       const actions = document.createElement("div");
@@ -586,17 +675,59 @@
 
       actions.append(atcBtn, dlBtn);
 
+      // Email capture (optional) — turns a try-on into a lead
+      const lead = document.createElement("div");
+      lead.className = "otn-lead";
+      lead.innerHTML = `
+        <div class="otn-lead-label">Love it? Get this look in your inbox</div>
+        <div class="otn-lead-row">
+          <input type="email" class="otn-lead-input" placeholder="your@email.com" />
+          <button type="button" class="otn-lead-btn">Save</button>
+        </div>
+      `;
+      const leadInput = lead.querySelector(".otn-lead-input");
+      const leadBtn = lead.querySelector(".otn-lead-btn");
+      leadBtn.onclick = async () => {
+        const email = (leadInput.value || "").trim();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+          leadInput.style.borderColor = "#c0392b";
+          leadInput.focus();
+          return;
+        }
+        leadBtn.disabled = true;
+        leadBtn.textContent = "Saving…";
+        try {
+          const res = await fetch(`${this.apiBase}/api/lead`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              session_id: this.getSessionId(),
+              email,
+              outfit_id: this.productHandle,
+              outfit_name: this.productName,
+            }),
+          });
+          if (!res.ok) throw new Error();
+          lead.innerHTML = `<div class="otn-lead-done">✓ Saved — we'll be in touch about this look.</div>`;
+        } catch (e) {
+          leadBtn.disabled = false;
+          leadBtn.textContent = "Save";
+          leadInput.style.borderColor = "#c0392b";
+        }
+      };
+
       const tryAgain = document.createElement("button");
       tryAgain.className = "otn-tryagain";
       tryAgain.textContent = "Try a different photo";
       tryAgain.onclick = () => this.showUploadStep();
 
-      body.append(title, result, actions, tryAgain);
+      body.append(title, result, disclaimer, actions, lead, tryAgain);
       this.modalContent.appendChild(body);
     },
 
     showError(message) {
       this.modalContent.innerHTML = "";
+      if (this.modalEl) this.modalEl.classList.remove("otn-wide");
       const body = document.createElement("div");
       body.className = "otn-body";
       body.innerHTML = `

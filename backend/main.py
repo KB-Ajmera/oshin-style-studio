@@ -1,6 +1,7 @@
 """FastAPI backend for Virtual Try-On + Styling Assistant."""
 
 import os
+import re
 import base64
 from contextlib import asynccontextmanager
 from urllib.parse import unquote
@@ -21,6 +22,7 @@ from beauty import get_hairstyles, get_makeup_looks, get_recommended_looks
 from history import (
     get_or_create_session, save_preferences, add_tryon_to_history,
     get_history, add_comparison, get_comparisons, delete_history_entry,
+    add_lead, get_leads,
 )
 from security import (
     check_rate_limit, validate_upload, validate_session_id, sanitize_string,
@@ -135,6 +137,29 @@ async def save_user_preferences(body: PreferencesBody, request: Request):
     sid = validate_session_id(body.session_id)
     session = save_preferences(sid, body.preferences)
     return {"status": "saved", "session_id": session["session_id"]}
+
+
+class LeadBody(BaseModel):
+    session_id: str
+    email: str
+    outfit_id: str = ""
+    outfit_name: str = ""
+
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+@app.post("/api/lead")
+async def capture_lead(body: LeadBody, request: Request):
+    check_rate_limit(request, "write")
+    sid = validate_session_id(body.session_id)
+    email = sanitize_string(body.email, max_len=254, field_name="email").strip().lower()
+    if not _EMAIL_RE.match(email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+    outfit_id = sanitize_string(body.outfit_id or "", max_len=100, field_name="outfit_id")
+    outfit_name = sanitize_string(body.outfit_name or "", max_len=200, field_name="outfit_name")
+    lead = add_lead(sid, email, outfit_id, outfit_name)
+    return {"status": "saved", "id": lead["id"]}
 
 
 @app.get("/api/recommendations")

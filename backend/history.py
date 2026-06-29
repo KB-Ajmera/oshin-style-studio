@@ -75,6 +75,35 @@ def add_tryon_to_history(
     return _row_to_entry(row)
 
 
+def add_lead(session_id: str, email: str, outfit_id: str = "", outfit_name: str = "") -> dict:
+    """Save a captured email lead, linked to the visitor's session."""
+    with db_cursor() as cur:
+        cur.execute("""
+            INSERT INTO leads (session_id, email, outfit_id, outfit_name)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id, created_at
+        """, (session_id, email, outfit_id, outfit_name))
+        row = cur.fetchone()
+    return {"id": str(row["id"]), "email": email,
+            "created_at": row["created_at"].isoformat() if row["created_at"] else None}
+
+
+def get_leads() -> list[dict]:
+    """All captured leads with the visitor's style profile + outfits tried."""
+    with db_cursor() as cur:
+        cur.execute("""
+            SELECT l.email, l.outfit_name, l.created_at, s.preferences
+            FROM leads l LEFT JOIN sessions s ON s.session_id = l.session_id
+            ORDER BY l.created_at DESC
+        """)
+        return [{
+            "email": r["email"],
+            "outfit_name": r["outfit_name"],
+            "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+            "preferences": r["preferences"] or {},
+        } for r in cur.fetchall()]
+
+
 def get_history(session_id: str) -> list[dict]:
     with db_cursor() as cur:
         return _get_history(cur, session_id)
